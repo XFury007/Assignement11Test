@@ -1,7 +1,9 @@
-﻿using MauiBankingExercise.Services;
+﻿
+using MauiBankingExercise.Services;
 using Microsoft.Extensions.Logging;
 using MauiBankingExercise.ViewModel;
 using MauiBankingExercise.Views;
+
 namespace MauiBankingExercise
 {
     public static class MauiProgram
@@ -17,13 +19,14 @@ namespace MauiBankingExercise
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "banking,db3");
 #if DEBUG
-    		builder.Logging.AddDebug();
-            builder.Services.AddSingleton<DatabaseService>();
-            builder.Services.AddTransient<AccountsViewModel>();
-            builder.Services.AddSingleton<AccountsPage>();
+            builder.Logging.AddDebug();
 #endif
+
+            // Register services for dependency injection
+            builder.Services.AddSingleton<ApiService>();
+            builder.Services.AddTransient<AccountsViewModel>();
+            builder.Services.AddTransient<AccountsPage>();
 
             return builder.Build();
         }

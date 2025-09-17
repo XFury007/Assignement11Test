@@ -15,6 +15,15 @@ namespace BankingApi.Controllers
         {
             _context = context;
         }
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Account>>> GetAccounts()
+        {
+            var accounts = await _context.Accounts
+                .Include(a => a.Customer)
+                .ToListAsync();
+
+            return Ok(accounts);
+        }
 
         // GET: api/accounts/customer/{customerId}
         [HttpGet("customer/{customerId}")]

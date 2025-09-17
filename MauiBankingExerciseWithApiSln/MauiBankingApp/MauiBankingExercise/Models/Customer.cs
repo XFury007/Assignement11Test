@@ -1,46 +1,52 @@
-﻿using SQLite;
-using SQLiteNetExtensions.Attributes;
-using System.Collections.Generic;
-
-namespace MauiBankingExercise.Models
+﻿namespace MauiBankingExercise.Models
 {
-
+    // --- Customer Model ---
     public class Customer
     {
-        [PrimaryKey, AutoIncrement]
         public int CustomerId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
 
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-        public string PhysicalAddress { get; set; }
-        public string IdentityNumber { get; set; }
+        // Optional: accounts for this customer
+        public List<Account>? Accounts { get; set; }
+    }
 
-        [ForeignKey(typeof(CustomerType))]
-        public int CustomerTypeId { get; set; }
-        public int GenderTypeId { get; set; }
-        public int RaceTypeId { get; set; }
-        public string Nationality { get; set; }
-        public int MaritalStatusId { get; set; }
-        public int EmploymentStatusId { get; set; }
+    // --- Account Model ---
+    public class Account
+    {
+        public int AccountId { get; set; }
+        public string AccountNumber { get; set; } = string.Empty;
+        public decimal AccountBalance { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime DateOpened { get; set; }
 
-        [ForeignKey(typeof(Bank))]
+        // Navigation back to customer
+        public Customer? Customer { get; set; }
+    }
+
+    // --- DTO for API customer display ---
+    public class CustomerDisplayModel
+    {
+        public int CustomerId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+
+        // Accounts belonging to this customer
+        public List<Account>? Accounts { get; set; }
+    }
+
+    // --- Bank Model ---
+    public class Bank
+    {
         public int BankId { get; set; }
-
-        [ManyToOne]
-        public Bank Bank { get; set; }
-
-        [ManyToOne]
-        public CustomerType CustomerType { get; set; }
-
-        [OneToMany(CascadeOperations = CascadeOperation.All)]
-        public List<Account> Accounts { get; set; }
-
-        [OneToMany(CascadeOperations = CascadeOperation.All)]
-        public List<Auth> Auths { get; set; }
-
-        [OneToMany(CascadeOperations = CascadeOperation.All)]
-        public List<Asset> Assets { get; set; }
+        public string BankName { get; set; } = string.Empty;
+        public string BankAddress { get; set; } = string.Empty;
+        public string BranchCode { get; set; } = string.Empty;
+        public string ContactPhoneNumber { get; set; } = string.Empty;
+        public string ContactEmail { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public string OperatingHours { get; set; } = string.Empty;
     }
 }

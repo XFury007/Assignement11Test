@@ -1,69 +1,40 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:MauiBankingExercise.ViewModel"
-             x:Class="MauiBankingExercise.Views.AccountsPage"
-             Title="Accounts">
+             xmlns:viewmodel="clr-namespace:MauiBankingExercise.ViewModel"
+             x:Class="MauiBankingExercise.Views.AccountsPage">
 
     <ContentPage.BindingContext>
-        <vm:AccountsViewModel />
+        <viewmodel:AccountsViewModel />
     </ContentPage.BindingContext>
 
     <VerticalStackLayout Padding="20" Spacing="10">
-        <Button Text="Load Accounts"
+
+        <Button Text="Reload Accounts" 
                 Clicked="OnLoadAccountsClicked" />
 
-        <CollectionView ItemsSource="{Binding Accounts}">
+        <!-- Loading indicator -->
+        <ActivityIndicator IsRunning="{Binding IsLoading}" 
+                           IsVisible="{Binding IsLoading}" 
+                           Color="Blue" />
+
+        <!-- Error message -->
+        <Label Text="{Binding ErrorMessage}" 
+               TextColor="Red"
+               IsVisible="{Binding ErrorMessage, Converter={StaticResource StringNotNullOrEmptyConverter}}" />
+
+        <!-- Accounts list -->
+        <CollectionView ItemsSource="{Binding Accounts}"
+                        SelectionMode="None">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <VerticalStackLayout Padding="10" Spacing="5" BackgroundColor="LightGray">
-                        <Label Text="{Binding AccountNumber}" FontAttributes="Bold" />
-                        <Label Text="{Binding AccountBalance}" />
+                    <VerticalStackLayout Padding="10" Margin="0,5" BackgroundColor="#f5f5f5">
+                        <Label Text="{Binding AccountNumber}" FontAttributes="Bold"/>
+                        <Label Text="{Binding AccountBalance, StringFormat='Balance: {0:C}'}"/>
+                        <Label Text="{Binding Customer.FirstName}" />
                     </VerticalStackLayout>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+
     </VerticalStackLayout>
 </ContentPage>
-
-
-
-
-<!--<CollectionView ItemsSource="{Binding Accounts}"
-                   SelectionMode="Single"
-                SelectionChanged="OnAccountSelected" >
-        <CollectionView.ItemTemplate>
-            <DataTemplate>
-      
-                <Grid Padding="10" Margin="10"
-                      ColumnDefinitions="*, Auto"
-                      RowDefinitions="Auto, Auto">
-
-                     Account Number (Top Left, Bold) 
-                    <Label Text="{Binding AccountNumber}" 
-                           FontSize="18" 
-                           FontAttributes="Bold"
-                           Grid.Row="0" Grid.Column="0" />
-
-                     Account Balance (Top Right) 
-                    <Label Text="{Binding AccountBalance, StringFormat='Balance: {0:C}'}"
-                           FontSize="14"
-                           Grid.Row="0" Grid.Column="1"
-                           HorizontalOptions="End" />
-
-                     Customer Name (Bottom Left) 
-                    <Label Text="{Binding Customer.FirstName}"
-                           FontSize="14"
-                           TextColor="Gray"
-                           Grid.Row="1" Grid.Column="0" />
-
-                     Account Type (Bottom Right) 
-                    <Label Text="{Binding AccountType.Name}"
-                           FontSize="14"
-                           TextColor="DarkBlue"
-                           Grid.Row="1" Grid.Column="1"
-                           HorizontalOptions="End" />
-                </Grid>
-            </DataTemplate>
-        </CollectionView.ItemTemplate>
-    </CollectionView>-->
-
