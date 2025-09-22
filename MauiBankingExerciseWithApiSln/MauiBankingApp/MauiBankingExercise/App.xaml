@@ -2,6 +2,7 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:MauiBankingExercise"
+             xmlns:converters="clr-namespace:MauiBankingExercise.Converters"
              x:Class="MauiBankingExercise.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -9,6 +10,12 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Converters -->
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            
+            <!-- Additional global resources -->
+            <x:String x:Key="AppName">Banking App</x:String>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

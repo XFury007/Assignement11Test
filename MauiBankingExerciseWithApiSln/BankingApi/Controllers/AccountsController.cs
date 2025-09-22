@@ -18,11 +18,11 @@ namespace BankingApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Account>>> GetAccounts()
         {
-            var accounts = await _context.Accounts
+            return await _context.Accounts
                 .Include(a => a.Customer)
+                .Include(a => a.AccountType)
+                .AsNoTracking()
                 .ToListAsync();
-
-            return Ok(accounts);
         }
 
         // GET: api/accounts/customer/{customerId}

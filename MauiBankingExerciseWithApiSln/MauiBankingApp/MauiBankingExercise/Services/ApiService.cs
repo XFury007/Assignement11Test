@@ -1,68 +1,124 @@
 ﻿using System.Text.Json;
 using MauiBankingExercise.Models;
-using System.Text; 
+using System.Text;
+using System.Diagnostics;
 
 namespace MauiBankingExercise.Services
 {
-    public class ApiService
+    public class ApiService : IApiService
     {
         private readonly HttpClient _httpClient;
-        private const string BaseUrl = "https://10.0.2.2:7258"; // Update this to match your API project's URL
 
-        public ApiService()
+        public ApiService(HttpClient httpClient)
         {
-            _httpClient = new HttpClient();
-            // Configure for HTTPS development certificates
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
+            
+            // Log the base address for debugging
+            Debug.WriteLine($"ApiService initialized with BaseAddress: {_httpClient.BaseAddress}");
+        }
+
+        // Test API connectivity
+        public async Task<bool> TestApiConnectionAsync()
+        {
+            try
+            {
+                Debug.WriteLine("Testing API connection...");
+                
+                // Hit a known valid endpoint instead of base URL to avoid false 404
+                var response = await _httpClient.GetAsync("api/accounts");
+                
+                Debug.WriteLine($"Ping response: {response.StatusCode}");
+                
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"API connection test failed: {ex.Message}");
+                return false;
+            }
         }
 
         // Get all accounts by fetching customers and extracting their accounts
-       public async Task<List<Account>> GetAllAccountsAsync()
-    {
-        try
+        public async Task<List<Account>> GetAllAccountsAsync()
         {
-            var response = await _httpClient.GetAsync($"{BaseUrl}/api/accounts");
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var json = await response.Content.ReadAsStringAsync();
-                var accounts = JsonSerializer.Deserialize<List<Account>>(json, new JsonSerializerOptions
+                Debug.WriteLine($"GetAllAccountsAsync - Starting API call to {_httpClient.BaseAddress}api/accounts");
+                
+                var response = await _httpClient.GetAsync("api/accounts");
+                
+                Debug.WriteLine($"GetAllAccountsAsync - Response received: {response.StatusCode}");
+
+                if (response.IsSuccessStatusCode)
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    var json = await response.Content.ReadAsStringAsync();
+                    Debug.WriteLine($"GetAllAccountsAsync - Response content: {(json.Length > 500 ? json.Substring(0, 500) + "..." : json)}");
+                    
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+                    
+                    var accounts = JsonSerializer.Deserialize<List<Account>>(json, options);
+                    
+                    Debug.WriteLine($"GetAllAccountsAsync - Deserialized {accounts?.Count ?? 0} accounts");
+                    
+                    // Check for expected properties in the first account
+                    if (accounts != null && accounts.Count > 0)
+                    {
+                        var firstAccount = accounts[0];
+                        Debug.WriteLine($"First account details: Id={firstAccount.AccountId}, Number={firstAccount.AccountNumber}, Balance={firstAccount.AccountBalance}");
+                        
+                        // Check if Customer property is null
+                        if (firstAccount.Customer == null)
+                        {
+                            Debug.WriteLine("WARNING: Customer property is null in the deserialized account");
+                        }
+                    }
 
-                return accounts ?? new List<Account>();
+                    return accounts ?? new List<Account>();
+                }
+                else
+                {
+                    Debug.WriteLine($"API call failed: {response.StatusCode} - {response.ReasonPhrase}");
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Debug.WriteLine($"Error content: {errorContent}");
+                    return new List<Account>();
+                }
             }
-            else
+            catch (HttpRequestException httpEx)
             {
-                System.Diagnostics.Debug.WriteLine($"API call failed: {response.StatusCode} - {response.ReasonPhrase}");
-                var errorContent = await response.Content.ReadAsStringAsync();
-                System.Diagnostics.Debug.WriteLine($"Error content: {errorContent}");
+                Debug.WriteLine($"HTTP Exception in GetAllAccountsAsync: {httpEx.Message}");
+                Debug.WriteLine($"HTTP Exception details: {httpEx.InnerException?.Message ?? "No inner exception"}");
+                return new List<Account>();
+            }
+            catch (TaskCanceledException tcEx)
+            {
+                Debug.WriteLine($"Timeout Exception in GetAllAccountsAsync: {tcEx.Message}");
+                return new List<Account>();
+            }
+            catch (JsonException jsonEx)
+            {
+                Debug.WriteLine($"JSON Deserialization Exception in GetAllAccountsAsync: {jsonEx.Message}");
+                Debug.WriteLine($"JSON Exception path: {jsonEx.Path}");
+                return new List<Account>();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception in GetAllAccountsAsync: {ex.Message}");
+                Debug.WriteLine($"Exception type: {ex.GetType().Name}");
+                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
                 return new List<Account>();
             }
         }
-        catch (HttpRequestException httpEx)
-        {
-            System.Diagnostics.Debug.WriteLine($"HTTP Exception in GetAllAccountsAsync: {httpEx.Message}");
-            return new List<Account>();
-        }
-        catch (TaskCanceledException tcEx)
-        {
-            System.Diagnostics.Debug.WriteLine($"Timeout Exception in GetAllAccountsAsync: {tcEx.Message}");
-            return new List<Account>();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Exception in GetAllAccountsAsync: {ex.Message}");
-            return new List<Account>();
-        }
-    }
+
         // Get accounts for a specific customer
         public async Task<List<Account>> GetAccountsByCustomerIdAsync(int customerId)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{BaseUrl}/api/accounts/customer/{customerId}");
+                var response = await _httpClient.GetAsync($"api/accounts/customer/{customerId}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -75,12 +131,12 @@ namespace MauiBankingExercise.Services
                     return accounts ?? new List<Account>();
                 }
 
-                System.Diagnostics.Debug.WriteLine($"API call failed: {response.StatusCode}");
+                Debug.WriteLine($"API call failed: {response.StatusCode}");
                 return new List<Account>();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Exception in GetAccountsByCustomerIdAsync: {ex.Message}");
+                Debug.WriteLine($"Exception in GetAccountsByCustomerIdAsync: {ex.Message}");
                 return new List<Account>();
             }
         }
@@ -90,7 +146,7 @@ namespace MauiBankingExercise.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{BaseUrl}/api/customers/display");
+                var response = await _httpClient.GetAsync("api/customers/display");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -107,7 +163,7 @@ namespace MauiBankingExercise.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Exception in GetCustomersAsync: {ex.Message}");
+                Debug.WriteLine($"Exception in GetCustomersAsync: {ex.Message}");
                 return new List<CustomerDisplayModel>();
             }
         }
@@ -117,7 +173,7 @@ namespace MauiBankingExercise.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{BaseUrl}/api/customers/{customerId}/display");
+                var response = await _httpClient.GetAsync($"api/customers/{customerId}/display");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -134,7 +190,7 @@ namespace MauiBankingExercise.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Exception in GetCustomerByIdAsync: {ex.Message}");
+                Debug.WriteLine($"Exception in GetCustomerByIdAsync: {ex.Message}");
                 return null;
             }
         }
@@ -144,7 +200,7 @@ namespace MauiBankingExercise.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{BaseUrl}/api/banks");
+                var response = await _httpClient.GetAsync("api/banks");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -161,7 +217,7 @@ namespace MauiBankingExercise.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Exception in GetBanksAsync: {ex.Message}");
+                Debug.WriteLine($"Exception in GetBanksAsync: {ex.Message}");
                 return new List<Bank>();
             }
         }
@@ -174,7 +230,7 @@ namespace MauiBankingExercise.Services
                 var json = JsonSerializer.Serialize(customer);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync($"{BaseUrl}/api/customers", content);
+                var response = await _httpClient.PostAsync("api/customers", content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -191,7 +247,7 @@ namespace MauiBankingExercise.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Exception in CreateCustomerAsync: {ex.Message}");
+                Debug.WriteLine($"Exception in CreateCustomerAsync: {ex.Message}");
                 return null;
             }
         }
@@ -204,7 +260,7 @@ namespace MauiBankingExercise.Services
                 var json = JsonSerializer.Serialize(account);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync($"{BaseUrl}/api/accounts", content);
+                var response = await _httpClient.PostAsync("api/accounts", content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -221,7 +277,7 @@ namespace MauiBankingExercise.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Exception in CreateAccountAsync: {ex.Message}");
+                Debug.WriteLine($"Exception in CreateAccountAsync: {ex.Message}");
                 return null;
             }
         }
